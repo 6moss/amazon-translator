@@ -3,7 +3,7 @@ Module de traduction multilingue utilisant l'API OpenAI
 """
 
 import pandas as pd
-from langdetect import detect, LangDetectException
+from langdetect import detect
 from openai import OpenAI
 import time
 from typing import List, Dict, Tuple
@@ -32,7 +32,7 @@ class MultilingualTranslator:
         'pt': 'PT'
     }
     
-    def __init__(self, api_key: str, model: str = "gpt-4.1-mini"):
+    def __init__(self, api_key: str, model: str = "gpt-4o-mini"):
         """
         Initialise le traducteur
         
@@ -59,30 +59,37 @@ class MultilingualTranslator:
         for col in columns:
             if col in df.columns:
                 for idx in range(min(5, len(df))):
-                    text = str(df[col].iloc[idx])
-                    if text and text != 'nan' and len(text) > 10:
-                        sample_texts.append(text)
+                    try:
+                        text = str(df[col].iloc[idx])
+                        if text and text != 'nan' and text != 'None' and len(text) > 10:
+                            sample_texts.append(text)
+                    except Exception:
+                        continue
         
         if not sample_texts:
-            raise ValueError("Aucun texte suffisant pour détecter la langue")
+            # Par défaut, retourner FR si aucun texte n'est disponible
+            return 'FR'
         
         # Détecter la langue sur plusieurs échantillons
         detected_langs = []
         for text in sample_texts[:10]:  # Analyser jusqu'à 10 échantillons
             try:
                 lang = detect(text)
-                detected_langs.append(lang)
-            except LangDetectException:
+                if lang in self.LANG_CODE_MAPPING:
+                    detected_langs.append(lang)
+            except Exception:
+                # Ignorer les erreurs de détection
                 continue
         
         if not detected_langs:
-            raise ValueError("Impossible de détecter la langue source")
+            # Par défaut, retourner FR si la détection échoue
+            return 'FR'
         
         # Prendre la langue la plus fréquente
         most_common = max(set(detected_langs), key=detected_langs.count)
         
         # Convertir en code langue supporté
-        source_lang = self.LANG_CODE_MAPPING.get(most_common, 'EN')
+        source_lang = self.LANG_CODE_MAPPING.get(most_common, 'FR')
         
         return source_lang
     
