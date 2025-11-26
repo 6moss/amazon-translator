@@ -14,6 +14,50 @@ st.set_page_config(
     layout="wide"
 )
 
+# Authentification par mot de passe
+def check_password():
+    """Vérifie le mot de passe pour accéder à l'application"""
+    
+    def password_entered():
+        """Vérifie si le mot de passe saisi est correct"""
+        if st.session_state["password"] == st.secrets["APP_PASSWORD"]:
+            st.session_state["password_correct"] = True
+            del st.session_state["password"]  # Ne pas stocker le mdp
+        else:
+            st.session_state["password_correct"] = False
+
+    if "password_correct" not in st.session_state:
+        # Premier affichage : demander le mot de passe
+        st.title("🔐 Accès sécurisé")
+        st.text_input(
+            "Mot de passe", 
+            type="password", 
+            on_change=password_entered, 
+            key="password"
+        )
+        st.info("Entrez le mot de passe pour accéder à l'application")
+        return False
+    
+    elif not st.session_state["password_correct"]:
+        # Mot de passe incorrect
+        st.title("🔐 Accès sécurisé")
+        st.text_input(
+            "Mot de passe", 
+            type="password", 
+            on_change=password_entered, 
+            key="password"
+        )
+        st.error("❌ Mot de passe incorrect")
+        return False
+    
+    else:
+        # Mot de passe correct
+        return True
+
+# Vérifier l'authentification avant de continuer
+if not check_password():
+    st.stop()
+
 # Langues supportées
 LANGUES = {
     "FR": "français",
